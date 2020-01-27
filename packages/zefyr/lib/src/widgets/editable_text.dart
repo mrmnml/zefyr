@@ -23,6 +23,7 @@ import 'scope.dart';
 import 'selection.dart';
 import 'theme.dart';
 
+
 /// Core widget responsible for editing Zefyr documents.
 ///
 /// Depends on presence of [ZefyrTheme] and [ZefyrScope] somewhere up the
@@ -36,6 +37,7 @@ class ZefyrEditableText extends StatefulWidget {
     @required this.controller,
     @required this.focusNode,
     @required this.imageDelegate,
+    this.expandable = false,
     this.selectionControls,
     this.autofocus = true,
     this.mode = ZefyrMode.edit,
@@ -77,6 +79,8 @@ class ZefyrEditableText extends StatefulWidget {
 
   /// Padding around editable area.
   final EdgeInsets padding;
+
+  final bool expandable;
 
   /// The appearance of the keyboard.
   ///
@@ -151,6 +155,21 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
     Widget body = ListBody(children: _buildChildren(context));
     if (widget.padding != null) {
       body = Padding(padding: widget.padding, child: body);
+    }
+
+    if (widget.expandable == true) {
+      return Stack(fit: StackFit.passthrough, children: <Widget>[
+        body,
+        Positioned.fill(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            top: 0,
+            child: ZefyrSelectionOverlay(
+              controls:
+                  widget.selectionControls ?? defaultSelectionControls(context),
+            ))
+      ]);
     }
 
     body = SingleChildScrollView(
