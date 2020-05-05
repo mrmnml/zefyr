@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 import 'package:example/src/block_page.dart';
 import 'package:example/src/flutter_editor_page.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -12,6 +13,7 @@ import 'src/text_field_page.dart';
 import 'src/view.dart';
 
 void main() {
+  debugPrintGestureArenaDiagnostics = true;
   runApp(ZefyrApp());
 }
 
