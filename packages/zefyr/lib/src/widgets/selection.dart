@@ -10,6 +10,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:notus/notus.dart';
+import 'package:zefyr/src/widgets/my_ignore_pointer.dart';
 import 'package:zefyr/util.dart';
 import 'package:zefyr/zefyr.dart';
 
@@ -198,15 +199,26 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
     // we have a layer that can absorb onTap.
     // gesturedetector seems to compete..
     // TextSelectionGestureDetector is used by TextField (but it still stealth the onTap event)
-    final overlay = Listener(
+    final overlay1 = Listener(
       behavior: HitTestBehavior.translucent,
-      onPointerDown: _handleTapDown,
-      onPointerUp: _handleTap,
+      onPointerDown: (e) => _handleTapDown(e.position),
+      onPointerUp: (_) => _handleTap(),
       onPointerCancel: (_) => _handleTapCancel(),
       // onSingleLongTapStart: _handleLongPress,
       child: overChild,
     );
-    return Container(child: overlay);
+    final overlay2 = GestureDetector(
+      behavior: HitTestBehavior.translucent,
+      onTapDown: (e) => _handleTapDown(e.globalPosition),
+      onTapUp: (_) => _handleTap(),
+      // onTap: _handleTap,
+      onTapCancel: _handleTapCancel,
+      // onSingleLongTapStart: _handleLongPress,
+      child: overChild,
+    );
+
+    return MyIgnorePointer(
+        child: Container(child: overlay2), debugId: _scope.debugId);
   }
 
   //
@@ -255,8 +267,8 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
     });
   }
 
-  void _handleTapDown(PointerDownEvent details) {
-    _lastTapDownPosition = details.position;
+  void _handleTapDown(Offset position) {
+    _lastTapDownPosition = position;
   }
 
   void _handleTapCancel() {
@@ -277,7 +289,7 @@ class ZefyrSelectionOverlayState extends State<ZefyrSelectionOverlay>
     return false;
   }
 
-  void _handleTap(PointerUpEvent p) {
+  void _handleTap() {
     assert(_lastTapDownPosition != null);
     final globalPoint = _lastTapDownPosition;
     _lastTapDownPosition = null;
