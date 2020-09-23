@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:zefyr/zefyr.dart';
 
 import 'controller.dart';
 import 'editor.dart';
@@ -19,7 +20,9 @@ class ZefyrField extends StatefulWidget {
   final ZefyrMode mode;
   final ZefyrToolbarDelegate toolbarDelegate;
   final ZefyrImageDelegate imageDelegate;
+  final ZefyrSearchDelegate searchDelegate;
   final ScrollPhysics physics;
+  final bool expandable;
 
   /// The appearance of the keyboard.
   ///
@@ -38,8 +41,10 @@ class ZefyrField extends StatefulWidget {
     this.mode,
     this.toolbarDelegate,
     this.imageDelegate,
+    this.searchDelegate,
     this.physics,
     this.keyboardAppearance,
+    this.expandable = false,
   }) : super(key: key);
 
   @override
@@ -55,9 +60,11 @@ class _ZefyrFieldState extends State<ZefyrField> {
       controller: widget.controller,
       focusNode: widget.focusNode,
       autofocus: widget.autofocus,
+      expandable: widget.expandable,
       mode: _effectiveMode,
       toolbarDelegate: widget.toolbarDelegate,
       imageDelegate: widget.imageDelegate,
+      searchDelegate: widget.searchDelegate,
       physics: widget.physics,
       keyboardAppearance: widget.keyboardAppearance,
     );
@@ -85,12 +92,11 @@ class _ZefyrFieldState extends State<ZefyrField> {
   }
 
   InputDecoration _getEffectiveDecoration() {
-    final InputDecoration effectiveDecoration =
-        (widget.decoration ?? const InputDecoration())
-            .applyDefaults(Theme.of(context).inputDecorationTheme)
-            .copyWith(
-              enabled: _effectiveMode == ZefyrMode.edit,
-            );
+    final effectiveDecoration = (widget.decoration ?? const InputDecoration())
+        .applyDefaults(Theme.of(context).inputDecorationTheme)
+        .copyWith(
+          enabled: _effectiveMode == ZefyrMode.edit,
+        );
 
     return effectiveDecoration;
   }

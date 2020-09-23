@@ -3,6 +3,7 @@
 // BSD-style license that can be found in the LICENSE file.
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:notus/notus.dart';
 
@@ -22,6 +23,7 @@ import 'scope.dart';
 import 'selection.dart';
 import 'theme.dart';
 
+
 /// Core widget responsible for editing Zefyr documents.
 ///
 /// Depends on presence of [ZefyrTheme] and [ZefyrScope] somewhere up the
@@ -35,6 +37,7 @@ class ZefyrEditableText extends StatefulWidget {
     @required this.controller,
     @required this.focusNode,
     @required this.imageDelegate,
+    this.expandable = false,
     this.selectionControls,
     this.autofocus = true,
     this.mode = ZefyrMode.edit,
@@ -76,6 +79,8 @@ class ZefyrEditableText extends StatefulWidget {
 
   /// Padding around editable area.
   final EdgeInsets padding;
+
+  final bool expandable;
 
   /// The appearance of the keyboard.
   ///
@@ -131,7 +136,7 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
   }
 
   TextSelectionControls defaultSelectionControls(BuildContext context) {
-    TargetPlatform platform = Theme.of(context).platform;
+    final platform = Theme.of(context).platform;
     if (platform == TargetPlatform.iOS) {
       return cupertinoTextSelectionControls;
     }
@@ -152,6 +157,21 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
       body = Padding(padding: widget.padding, child: body);
     }
 
+    if (widget.expandable == true) {
+      return Stack(fit: StackFit.passthrough, children: <Widget>[
+        body,
+        Positioned.fill(
+            left: 0,
+            right: 0,
+            bottom: 0,
+            top: 0,
+            child: ZefyrSelectionOverlay(
+              controls:
+                  widget.selectionControls ?? defaultSelectionControls(context),
+            ))
+      ]);
+    }
+
     body = SingleChildScrollView(
       physics: widget.physics,
       controller: _scrollController,
@@ -163,7 +183,10 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
       controls: widget.selectionControls ?? defaultSelectionControls(context),
     ));
 
-    return Stack(fit: StackFit.expand, children: layers);
+    return MouseRegion(
+      cursor: SystemMouseCursors.text,
+      child: Stack(fit: StackFit.expand, children: layers),
+    );
   }
 
   @override
@@ -222,6 +245,7 @@ class _ZefyrEditableTextState extends State<ZefyrEditableText>
   // Private members
   //
 
+  // ignore: unused_field
   final ScrollController _scrollController = ScrollController();
   ZefyrRenderContext _renderContext;
   CursorTimer _cursorTimer;

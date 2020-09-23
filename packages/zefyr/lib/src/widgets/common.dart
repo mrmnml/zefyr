@@ -3,9 +3,12 @@
 // BSD-style license that can be found in the LICENSE file.
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:notus/notus.dart';
+import 'package:zefyr/src/widgets/attr_delegate.dart';
+import 'package:zefyr/src/widgets/block.dart';
 
 import 'editable_box.dart';
 import 'horizontal_rule.dart';
@@ -52,7 +55,7 @@ class _ZefyrLineState extends State<ZefyrLine> {
       assert(widget.style != null);
       content = ZefyrRichText(
         node: widget.node,
-        text: buildText(context),
+        text: buildText(context, scope),
       );
     }
 
@@ -60,11 +63,14 @@ class _ZefyrLineState extends State<ZefyrLine> {
       Color cursorColor;
       switch (theme.platform) {
         case TargetPlatform.iOS:
+        case TargetPlatform.macOS:
           cursorColor ??= CupertinoTheme.of(context).primaryColor;
           break;
 
         case TargetPlatform.android:
         case TargetPlatform.fuchsia:
+        case TargetPlatform.windows:
+        case TargetPlatform.linux:
           cursorColor = theme.cursorColor;
           break;
       }
@@ -98,14 +104,14 @@ class _ZefyrLineState extends State<ZefyrLine> {
   }
 
   void bringIntoView(BuildContext context) {
-    ScrollableState scrollable = Scrollable.of(context);
+    final scrollable = Scrollable.of(context);
     final object = context.findRenderObject();
     assert(object.attached);
-    final RenderAbstractViewport viewport = RenderAbstractViewport.of(object);
+    final viewport = RenderAbstractViewport.of(object);
     assert(viewport != null);
 
-    final double offset = scrollable.position.pixels;
-    double target = viewport.getOffsetToReveal(object, 0.0).offset;
+    final offset = scrollable.position.pixels;
+    var target = viewport.getOffsetToReveal(object, 0.0).offset;
     if (target - offset < 0.0) {
       scrollable.position.jumpTo(target);
       return;
@@ -116,26 +122,41 @@ class _ZefyrLineState extends State<ZefyrLine> {
     }
   }
 
-  TextSpan buildText(BuildContext context) {
+  TextSpan buildText(BuildContext context, ZefyrScope scope) {
     final theme = ZefyrTheme.of(context);
-    final List<TextSpan> children = widget.node.children
-        .map((node) => _segmentToTextSpan(node, theme))
+    final children = widget.node.children
+        .map((node) => _segmentToTextSpan(node, theme, scope))
         .toList(growable: false);
     return TextSpan(style: widget.style, children: children);
   }
 
-  TextSpan _segmentToTextSpan(Node node, ZefyrThemeData theme) {
+  TextSpan _segmentToTextSpan(
+      Node node, ZefyrThemeData theme, ZefyrScope scope) {
     final TextNode segment = node;
     final attrs = segment.style;
 
+    GestureRecognizer recognizer;
+
+    if (attrs.contains(NotusAttribute.link)) {
+      final tapGestureRecognizer = TapGestureRecognizer();
+      tapGestureRecognizer.onTap = () {
+        print("delegate: ${scope.attrDelegate}");
+        if (scope.attrDelegate?.onLinkTap != null) {
+          scope.attrDelegate.onLinkTap(attrs.get(NotusAttribute.link).value);
+        }
+      };
+      recognizer = tapGestureRecognizer;
+    }
+
     return TextSpan(
       text: segment.value,
+      recognizer: recognizer,
       style: _getTextStyle(attrs, theme),
     );
   }
 
   TextStyle _getTextStyle(NotusStyle style, ZefyrThemeData theme) {
-    TextStyle result = TextStyle();
+    var result = TextStyle();
     if (style.containsSame(NotusAttribute.bold)) {
       result = result.merge(theme.attributeTheme.bold);
     }
@@ -144,6 +165,17 @@ class _ZefyrLineState extends State<ZefyrLine> {
     }
     if (style.contains(NotusAttribute.link)) {
       result = result.merge(theme.attributeTheme.link);
+    }
+    if (style.contains(NotusAttribute.highlight)) {
+      final hexStringToColor = (String hex) {
+        hex = hex.replaceFirst('#', '');
+        hex = hex.length == 6 ? 'ff' + hex : hex;
+        int val = int.parse(hex, radix: 16);
+        return Color(val);
+      };
+      final bgColor =
+          hexStringToColor(style.value<String>(NotusAttribute.highlight));
+      result = result.copyWith(backgroundColor: bgColor);
     }
     return result;
   }
@@ -156,6 +188,8 @@ class _ZefyrLineState extends State<ZefyrLine> {
       return ZefyrHorizontalRule(node: node);
     } else if (embed.type == EmbedType.image) {
       return ZefyrImage(node: node, delegate: scope.imageDelegate);
+    } else if (embed.type == EmbedType.block) {
+      return ZefyrSubBlock(node: node, searchDelegate: scope.searchDelegate);
     } else {
       throw UnimplementedError('Unimplemented embed type ${embed.type}');
     }

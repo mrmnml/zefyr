@@ -4,6 +4,7 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+import 'package:zefyr/src/widgets/attr_delegate.dart';
 
 import 'controller.dart';
 import 'editable_text.dart';
@@ -11,6 +12,7 @@ import 'image.dart';
 import 'mode.dart';
 import 'scaffold.dart';
 import 'scope.dart';
+import 'search.dart';
 import 'theme.dart';
 import 'toolbar.dart';
 
@@ -20,12 +22,15 @@ class ZefyrEditor extends StatefulWidget {
     Key key,
     @required this.controller,
     @required this.focusNode,
+    this.expandable = false,
     this.autofocus = true,
     this.mode = ZefyrMode.edit,
     this.padding = const EdgeInsets.symmetric(horizontal: 16.0),
     this.toolbarDelegate,
     this.imageDelegate,
+    this.searchDelegate,
     this.selectionControls,
+    this.attrDelegate,
     this.physics,
     this.keyboardAppearance,
   })  : assert(mode != null),
@@ -54,10 +59,14 @@ class ZefyrEditor extends StatefulWidget {
   /// Optional delegate for customizing this editor's toolbar.
   final ZefyrToolbarDelegate toolbarDelegate;
 
+  final ZefyrAttrDelegate attrDelegate;
+
   /// Delegate for resolving embedded images.
   ///
   /// This delegate is required if embedding images is allowed.
   final ZefyrImageDelegate imageDelegate;
+
+  final ZefyrSearchDelegate searchDelegate;
 
   /// Optional delegate for building the text selection handles and toolbar.
   ///
@@ -69,6 +78,8 @@ class ZefyrEditor extends StatefulWidget {
 
   /// Padding around editable area.
   final EdgeInsets padding;
+
+  final bool expandable;
 
   /// The appearance of the keyboard.
   ///
@@ -83,6 +94,7 @@ class ZefyrEditor extends StatefulWidget {
 
 class _ZefyrEditorState extends State<ZefyrEditor> {
   ZefyrImageDelegate _imageDelegate;
+  ZefyrAttrDelegate _attrDelegate;
   ZefyrScope _scope;
   ZefyrThemeData _themeData;
   GlobalKey<ZefyrToolbarState> _toolbarKey;
@@ -109,6 +121,7 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
         key: _toolbarKey,
         editor: _scope,
         delegate: widget.toolbarDelegate,
+        searchDelegate: widget.searchDelegate,
       ),
     );
   }
@@ -130,6 +143,7 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
   void initState() {
     super.initState();
     _imageDelegate = widget.imageDelegate;
+    _attrDelegate = widget.attrDelegate;
   }
 
   @override
@@ -141,6 +155,14 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
     if (widget.imageDelegate != oldWidget.imageDelegate) {
       _imageDelegate = widget.imageDelegate;
       _scope.imageDelegate = _imageDelegate;
+    }
+    if (widget.attrDelegate != oldWidget.attrDelegate) {
+      _attrDelegate = widget.attrDelegate;
+      _scope.attrDelegate = _attrDelegate;
+    }
+    if (widget.searchDelegate != oldWidget.searchDelegate) {
+      // _searchDelegate = widget.searchDelegate;
+      _scope.searchDelegate = widget.searchDelegate;
     }
   }
 
@@ -157,6 +179,8 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
       _scope = ZefyrScope.editable(
         mode: widget.mode,
         imageDelegate: _imageDelegate,
+        attrDelegate: _attrDelegate,
+        searchDelegate: widget.searchDelegate,
         controller: widget.controller,
         focusNode: widget.focusNode,
         focusScope: FocusScope.of(context),
@@ -169,7 +193,7 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
 
     final scaffold = ZefyrScaffold.of(context);
     if (_scaffold != scaffold) {
-      bool didHaveToolbar = hasToolbar;
+      final didHaveToolbar = hasToolbar;
       hideToolbar();
       _scaffold = scaffold;
       if (didHaveToolbar) showToolbar();
@@ -186,8 +210,8 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
 
   @override
   Widget build(BuildContext context) {
-    final ThemeData themeData = Theme.of(context);
-    final Brightness keyboardAppearance =
+    final themeData = Theme.of(context);
+    final keyboardAppearance =
         widget.keyboardAppearance ?? themeData.primaryColorBrightness;
 
     Widget editable = ZefyrEditableText(
@@ -196,6 +220,7 @@ class _ZefyrEditorState extends State<ZefyrEditor> {
       imageDelegate: _scope.imageDelegate,
       selectionControls: widget.selectionControls,
       autofocus: widget.autofocus,
+      expandable: widget.expandable,
       mode: widget.mode,
       padding: widget.padding,
       physics: widget.physics,

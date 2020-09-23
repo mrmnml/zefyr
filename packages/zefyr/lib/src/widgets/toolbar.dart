@@ -9,12 +9,15 @@ import 'package:notus/notus.dart';
 
 import 'buttons.dart';
 import 'scope.dart';
+import 'search.dart';
 import 'theme.dart';
 
 /// List of all button actions supported by [ZefyrToolbar] buttons.
 enum ZefyrToolbarAction {
   bold,
   italic,
+  block,
+  mention,
   link,
   unlink,
   clipboardCopy,
@@ -104,16 +107,18 @@ class ZefyrToolbar extends StatefulWidget implements PreferredSizeWidget {
     @required this.editor,
     this.autoHide = true,
     this.delegate,
+    this.searchDelegate,
   }) : super(key: key);
 
   final ZefyrToolbarDelegate delegate;
+  final ZefyrSearchDelegate searchDelegate;
   final ZefyrScope editor;
 
   /// Whether to automatically hide this toolbar when editor loses focus.
   final bool autoHide;
 
   static ZefyrToolbarState of(BuildContext context) {
-    final _ZefyrToolbarScope scope =
+    final scope =
         context.dependOnInheritedWidgetOfExactType<_ZefyrToolbarScope>();
     return scope?.toolbar;
   }
@@ -193,6 +198,7 @@ class ZefyrToolbarState extends State<ZefyrToolbar>
   void initState() {
     super.initState();
     _delegate = widget.delegate ?? _DefaultZefyrToolbarDelegate();
+
     _overlayAnimation =
         AnimationController(vsync: this, duration: Duration(milliseconds: 100));
     _selection = editor.selection;
@@ -252,6 +258,8 @@ class ZefyrToolbarState extends State<ZefyrToolbar>
     final buttons = <Widget>[
       buildButton(context, ZefyrToolbarAction.bold),
       buildButton(context, ZefyrToolbarAction.italic),
+      buildButton(context, ZefyrToolbarAction.block),
+      buildButton(context, ZefyrToolbarAction.mention),
       LinkButton(),
       HeadingButton(),
       buildButton(context, ZefyrToolbarAction.bulletList),
@@ -337,6 +345,8 @@ class _DefaultZefyrToolbarDelegate implements ZefyrToolbarDelegate {
   static const kDefaultButtonIcons = {
     ZefyrToolbarAction.bold: Icons.format_bold,
     ZefyrToolbarAction.italic: Icons.format_italic,
+    ZefyrToolbarAction.block: Icons.memory,
+    ZefyrToolbarAction.mention: Icons.alternate_email,
     ZefyrToolbarAction.link: Icons.link,
     ZefyrToolbarAction.unlink: Icons.link_off,
     ZefyrToolbarAction.clipboardCopy: Icons.content_copy,

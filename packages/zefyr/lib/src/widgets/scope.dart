@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:notus/notus.dart';
+import 'package:zefyr/zefyr.dart';
 
 import 'controller.dart';
 import 'cursor_timer.dart';
@@ -9,6 +10,13 @@ import 'image.dart';
 import 'mode.dart';
 import 'render_context.dart';
 import 'view.dart';
+
+int XX__debugId = 0;
+
+int getZefyrInstanceDebugId() {
+  XX__debugId += 1;
+  return XX__debugId;
+}
 
 /// Provides access to shared state of [ZefyrEditor] or [ZefyrView].
 ///
@@ -24,11 +32,23 @@ import 'view.dart';
 class ZefyrScope extends ChangeNotifier {
   /// Creates a view-only scope.
   ///
+  int _debugId = 0;
+
+  int get debugId => _debugId;
+
+  ///
   /// Normally used in [ZefyrView].
-  ZefyrScope.view({ZefyrImageDelegate imageDelegate})
-      : isEditable = false,
+  ZefyrScope.view({
+    ZefyrImageDelegate imageDelegate,
+    ZefyrAttrDelegate attrDelegate,
+    ZefyrSearchDelegate searchDelegate,
+  })  : isEditable = false,
         _mode = ZefyrMode.view,
-        _imageDelegate = imageDelegate;
+        _imageDelegate = imageDelegate,
+        _attrDelegate = attrDelegate,
+        _searchDelegate = searchDelegate {
+    _debugId = getZefyrInstanceDebugId();
+  }
 
   /// Creates editable scope.
   ///
@@ -39,6 +59,8 @@ class ZefyrScope extends ChangeNotifier {
     @required FocusNode focusNode,
     @required FocusScopeNode focusScope,
     ZefyrImageDelegate imageDelegate,
+    ZefyrAttrDelegate attrDelegate,
+    ZefyrSearchDelegate searchDelegate,
   })  : assert(mode != null),
         assert(controller != null),
         assert(focusNode != null),
@@ -47,10 +69,13 @@ class ZefyrScope extends ChangeNotifier {
         _mode = mode,
         _controller = controller,
         _imageDelegate = imageDelegate,
+        _attrDelegate = attrDelegate,
+        _searchDelegate = searchDelegate,
         _focusNode = focusNode,
         _focusScope = focusScope,
         _cursorTimer = CursorTimer(),
         _renderContext = ZefyrRenderContext() {
+    _debugId = getZefyrInstanceDebugId();
     _selectionStyle = _controller.getSelectionStyle();
     _selection = _controller.selection;
     _controller.addListener(_handleControllerChange);
@@ -58,7 +83,7 @@ class ZefyrScope extends ChangeNotifier {
   }
 
   static ZefyrScope of(BuildContext context) {
-    final ZefyrScopeAccess widget =
+    final widget =
         context.dependOnInheritedWidgetOfExactType<ZefyrScopeAccess>();
     return widget.scope;
   }
@@ -68,6 +93,24 @@ class ZefyrScope extends ChangeNotifier {
   set imageDelegate(ZefyrImageDelegate value) {
     if (_imageDelegate != value) {
       _imageDelegate = value;
+      notifyListeners();
+    }
+  }
+
+  ZefyrAttrDelegate _attrDelegate;
+  ZefyrAttrDelegate get attrDelegate => _attrDelegate;
+  set attrDelegate(ZefyrAttrDelegate value) {
+    if (_attrDelegate != value) {
+      _attrDelegate = value;
+      notifyListeners();
+    }
+  }
+
+  ZefyrSearchDelegate _searchDelegate;
+  ZefyrSearchDelegate get searchDelegate => _searchDelegate;
+  set searchDelegate(ZefyrSearchDelegate value) {
+    if (_searchDelegate != value) {
+      _searchDelegate = value;
       notifyListeners();
     }
   }

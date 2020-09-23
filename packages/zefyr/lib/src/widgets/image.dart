@@ -2,16 +2,16 @@
 // for details. All rights reserved. Use of this source code is governed by a
 // BSD-style license that can be found in the LICENSE file.
 import 'dart:async';
-import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/rendering.dart';
 import 'package:flutter/widgets.dart';
 import 'package:meta/meta.dart';
 import 'package:notus/notus.dart';
-import 'package:zefyr/zefyr.dart';
 
 import 'editable_box.dart';
+import 'selection_utils.dart';
+import 'theme.dart';
 
 /// Provides interface for embedding images into Zefyr editor.
 // TODO: allow configuring image sources and related toolbar buttons.
@@ -40,6 +40,12 @@ abstract class ZefyrImageDelegate<S> {
   Future<String> pickImage(S source);
 }
 
+class BlockBoxHitTestEntry extends BoxHitTestEntry {
+  BlockBoxHitTestEntry(RenderBox target, Offset position, this.scopeDebugId)
+      : super(target, position);
+  final int scopeDebugId;
+}
+
 class ZefyrImage extends StatefulWidget {
   const ZefyrImage({Key key, @required this.node, @required this.delegate})
       : super(key: key);
@@ -61,7 +67,7 @@ class _ZefyrImageState extends State<ZefyrImage> {
   Widget build(BuildContext context) {
     final theme = ZefyrTheme.of(context);
     final image = widget.delegate.buildImage(context, imageSource);
-    return _EditableImage(
+    return AnEditableImage(
       child: Padding(
         padding: theme.defaultLineTheme.padding,
         child: image,
@@ -71,16 +77,18 @@ class _ZefyrImageState extends State<ZefyrImage> {
   }
 }
 
-class _EditableImage extends SingleChildRenderObjectWidget {
-  _EditableImage({@required Widget child, @required this.node})
+class AnEditableImage extends SingleChildRenderObjectWidget {
+  AnEditableImage(
+      {@required Widget child, @required this.node, @required this.debugId})
       : assert(node != null),
         super(child: child);
 
   final EmbedNode node;
+  final int debugId;
 
   @override
   RenderEditableImage createRenderObject(BuildContext context) {
-    return RenderEditableImage(node: node);
+    return RenderEditableImage(node: node, debugId: debugId);
   }
 
   @override
@@ -93,15 +101,30 @@ class _EditableImage extends SingleChildRenderObjectWidget {
 class RenderEditableImage extends RenderBox
     with RenderObjectWithChildMixin<RenderBox>, RenderProxyBoxMixin<RenderBox>
     implements RenderEditableBox {
-  RenderEditableImage({
-    RenderImage child,
-    @required EmbedNode node,
-  }) : node = node {
+  RenderEditableImage(
+      {RenderImage child, @required EmbedNode node, @required this.debugId})
+      : node = node {
     this.child = child;
   }
 
+  final int debugId;
+
   @override
   EmbedNode node;
+
+  // we return a special blockhittest to avoid the selection layer to move the selection.
+  //
+  @override
+  bool hitTest(BoxHitTestResult result, {ui.Offset position}) {
+    if (size.contains(position)) {
+      if (hitTestChildren(result, position: position) ||
+          hitTestSelf(position)) {
+        result.add(BlockBoxHitTestEntry(this, position, debugId));
+        return true;
+      }
+    }
+    return false;
+  }
 
   // TODO: Customize caret height offset instead of adjusting here by 2px.
   @override
@@ -114,17 +137,14 @@ class RenderEditableImage extends RenderBox
   TextSelection getLocalSelection(TextSelection documentSelection) {
     if (!intersectsWithSelection(documentSelection)) return null;
 
-    int nodeBase = node.documentOffset;
-    int nodeExtent = nodeBase + node.length;
-    int base = math.max(0, documentSelection.baseOffset - nodeBase);
-    int extent =
-        math.min(documentSelection.extentOffset, nodeExtent) - nodeBase;
-    return documentSelection.copyWith(baseOffset: base, extentOffset: extent);
+    final nodeBase = node.documentOffset;
+    final nodeExtent = nodeBase + node.length;
+    return selectionRestrict(nodeBase, nodeExtent, documentSelection);
   }
 
   @override
   List<ui.TextBox> getEndpointsForSelection(TextSelection selection) {
-    TextSelection local = getLocalSelection(selection);
+    final local = getLocalSelection(selection);
     if (local.isCollapsed) {
       final dx = local.extentOffset == 0 ? _childOffset.dx : size.width;
       return [
@@ -143,7 +163,7 @@ class RenderEditableImage extends RenderBox
 
   @override
   TextPosition getPositionForOffset(Offset offset) {
-    int position = node.documentOffset;
+    var position = node.documentOffset;
 
     if (offset.dx > size.width / 2) {
       position++;
@@ -159,15 +179,15 @@ class RenderEditableImage extends RenderBox
 
   @override
   bool intersectsWithSelection(TextSelection selection) {
-    final int base = node.documentOffset;
-    final int extent = base + node.length;
-    return base <= selection.extentOffset && selection.baseOffset <= extent;
+    final base = node.documentOffset;
+    final extent = base + node.length;
+    return selectionIntersectsWith(base, extent, selection);
   }
 
   @override
   Offset getOffsetForCaret(TextPosition position, Rect caretPrototype) {
     final pos = position.offset - node.documentOffset;
-    Offset caretOffset = _childOffset - Offset(kHorizontalPadding, 0.0);
+    var caretOffset = _childOffset - Offset(kHorizontalPadding, 0.0);
     if (pos == 1) {
       caretOffset =
           caretOffset + Offset(_lastChildSize.width + kHorizontalPadding, 0.0);
@@ -181,7 +201,7 @@ class RenderEditableImage extends RenderBox
     final localSelection = getLocalSelection(selection);
     assert(localSelection != null);
     if (!localSelection.isCollapsed) {
-      final Paint paint = Paint()
+      final paint = Paint()
         ..color = selectionColor
         ..style = PaintingStyle.stroke
         ..strokeWidth = 3.0;
@@ -191,6 +211,7 @@ class RenderEditableImage extends RenderBox
     }
   }
 
+  @override
   void paint(PaintingContext context, Offset offset) {
     super.paint(context, offset + _childOffset);
   }

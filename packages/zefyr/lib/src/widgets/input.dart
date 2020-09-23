@@ -46,10 +46,13 @@ class InputConnectionController implements TextInputClient {
           keyboardAppearance: keyboardAppearance,
           textCapitalization: TextCapitalization.sentences,
         ),
-      )..setEditingState(value);
+      )
+        ..show()
+        ..setEditingState(value);
       _sentRemoteValues.add(value);
+    } else {
+      _textInputConnection.show();
     }
-    _textInputConnection.show();
   }
 
   /// Closes input connection if it's currently open. Otherwise does nothing.
@@ -81,7 +84,7 @@ class InputConnectionController implements TextInputClient {
 
     if (actualValue == _lastKnownRemoteTextEditingValue) return;
 
-    bool shouldRemember = value.text != _lastKnownRemoteTextEditingValue.text;
+    final shouldRemember = value.text != _lastKnownRemoteTextEditingValue.text;
     _lastKnownRemoteTextEditingValue = actualValue;
     _textInputConnection.setEditingState(actualValue);
     if (shouldRemember) {
@@ -97,6 +100,9 @@ class InputConnectionController implements TextInputClient {
   @override
   void performAction(TextInputAction action) {
     // no-op
+    final val = _lastKnownRemoteTextEditingValue;
+    onValueChanged(val.selection.start, '', '\n',
+        TextSelection.collapsed(offset: val.selection.start + 1));
   }
 
   @override
@@ -158,13 +164,9 @@ class InputConnectionController implements TextInputClient {
     }
   }
 
-  //
-  // Private members
-  //
-
-  final List<TextEditingValue> _sentRemoteValues = [];
-  TextInputConnection _textInputConnection;
-  TextEditingValue _lastKnownRemoteTextEditingValue;
+  @override
+  TextEditingValue get currentTextEditingValue =>
+      _lastKnownRemoteTextEditingValue;
 
   @override
   void updateFloatingCursor(RawFloatingCursorPoint point) {
@@ -179,5 +181,27 @@ class InputConnectionController implements TextInputClient {
       _lastKnownRemoteTextEditingValue = null;
       _sentRemoteValues.clear();
     }
+  }
+
+  //
+  // Private members
+  //
+
+  final List<TextEditingValue> _sentRemoteValues = [];
+  TextInputConnection _textInputConnection;
+  TextEditingValue _lastKnownRemoteTextEditingValue;
+
+  // TODO: figure out if we need to support autofill
+  @override
+  AutofillScope get currentAutofillScope => null;
+
+  @override
+  void showAutocorrectionPromptRect(int start, int end) {
+    // TODO: implement showAutocorrectionPromptRect
+  }
+
+  @override
+  void performPrivateCommand(String action, Map<String, dynamic> data) {
+    // TODO: implement performPrivateCommand
   }
 }
