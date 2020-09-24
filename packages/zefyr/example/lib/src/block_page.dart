@@ -5,7 +5,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:example/src/full_page.dart';
 import 'package:flutter/material.dart';
 import 'package:quill_delta/quill_delta.dart';
 import 'package:zefyr/zefyr.dart';
@@ -67,8 +66,7 @@ class CustomSearchDelegate implements ZefyrSearchDelegate {
   FocusNode childFocusNode;
 
   CustomSearchDelegate(this.controller, this.focusNode) {
-    childController =
-        ZefyrController(NotusDocument.fromDelta(getDelta(childDoc)));
+    childController = ZefyrController(NotusDocument.fromDelta(getDelta(childDoc)));
     childFocusNode = FocusNode();
   }
 
@@ -123,10 +121,10 @@ class CustomSearchDelegate implements ZefyrSearchDelegate {
     // return CustomScrollView(slivers: builder.build());
   }
 
-  @override
-  Future<void> onMention() async {
-    print("TODO");
-  }
+  // @override
+  // Future<void> onMention() async {
+  //   print("TODO");
+  // }
 
   // @override
   // Future<void> onMention() async {
@@ -154,8 +152,7 @@ class CustomSearchDelegate implements ZefyrSearchDelegate {
 enum _Options { darkTheme }
 
 class _BlockEditorScreenState extends State<BlockEditorScreen> {
-  final ZefyrController _controller =
-      ZefyrController(NotusDocument.fromDelta(getDelta(doc)));
+  final ZefyrController _controller = ZefyrController(NotusDocument.fromDelta(getDelta(doc)));
   final FocusNode _focusNode = FocusNode();
   bool _editing = true;
   StreamSubscription<NotusChange> _sub;
@@ -181,9 +178,7 @@ class _BlockEditorScreenState extends State<BlockEditorScreen> {
     if (_searchDelegate == null) {
       _searchDelegate = CustomSearchDelegate(_controller, _focusNode);
     }
-    final done = _editing
-        ? IconButton(onPressed: _stopEditing, icon: Icon(Icons.save))
-        : IconButton(onPressed: _startEditing, icon: Icon(Icons.edit));
+    final done = _editing ? IconButton(onPressed: _stopEditing, icon: Icon(Icons.save)) : IconButton(onPressed: _startEditing, icon: Icon(Icons.edit));
     final result = Scaffold(
       resizeToAvoidBottomPadding: true,
       appBar: AppBar(
