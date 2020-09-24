@@ -16,9 +16,9 @@ import 'theme.dart';
 enum ZefyrToolbarAction {
   bold,
   italic,
-  block,
+  // block,
   // mention,
-  // link,
+  link,
   unlink,
   clipboardCopy,
   openInBrowser,
@@ -250,7 +250,7 @@ class ZefyrToolbarState extends State<ZefyrToolbar> with SingleTickerProviderSta
     final buttons = <Widget>[
       buildButton(context, ZefyrToolbarAction.bold),
       buildButton(context, ZefyrToolbarAction.italic),
-      buildButton(context, ZefyrToolbarAction.block),
+      // buildButton(context, ZefyrToolbarAction.block),
       // buildButton(context, ZefyrToolbarAction.mention),
       LinkButton(),
       HeadingButton(),
@@ -331,9 +331,9 @@ class _DefaultZefyrToolbarDelegate implements ZefyrToolbarDelegate {
   static const kDefaultButtonIcons = {
     ZefyrToolbarAction.bold: Icons.format_bold,
     ZefyrToolbarAction.italic: Icons.format_italic,
-    ZefyrToolbarAction.block: Icons.memory,
+    // ZefyrToolbarAction.block: Icons.memory,
     // ZefyrToolbarAction.mention: Icons.alternate_email,
-    // ZefyrToolbarAction.link: Icons.link,
+    ZefyrToolbarAction.link: Icons.link,
     ZefyrToolbarAction.unlink: Icons.link_off,
     ZefyrToolbarAction.clipboardCopy: Icons.content_copy,
     ZefyrToolbarAction.openInBrowser: Icons.open_in_new,

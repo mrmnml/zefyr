@@ -70,12 +70,12 @@ class CustomSearchDelegate implements ZefyrSearchDelegate {
     childFocusNode = FocusNode();
   }
 
-  @override
-  Future<void> onBlock() async {
-    this.controller.formatSelection(NotusAttribute.embed.block("canard"));
-    print(NotusAttribute.embed.block("canard").toString());
-    this.focusNode.requestFocus();
-  }
+  // @override
+  // Future<void> onBlock() async {
+  //   this.controller.formatSelection(NotusAttribute.embed.block("canard"));
+  //   print(NotusAttribute.embed.block("canard").toString());
+  //   this.focusNode.requestFocus();
+  // }
 
   @override
   Future<Widget> buildBlock(String content) async {
